@@ -2,9 +2,8 @@
 #include <openvdb/openvdb.h>
 #include "MyLib.h"
 
-
-int test_OpenVDB()
-{
+/*
+int test_OpenVDB() {
     // Initialize the OpenVDB library.  This must be called at least
     // once per program and may safely be called multiple times.
     openvdb::initialize();
@@ -37,6 +36,7 @@ int test_OpenVDB()
         std::cout << "Grid" << iter.getCoord() << " = " << *iter << std::endl;
     }
 }
+*/
 
 /*
 Output:
@@ -55,7 +55,7 @@ int main() {
     std::cout << "MyApp is running!" << std::endl;
     // Call a function from MyLib
     MyLib::say_hello();
-    test_OpenVDB();
+    // test_OpenVDB();
     
     return 0;
 }

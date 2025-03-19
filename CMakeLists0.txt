@@ -87,47 +87,45 @@ add_subdirectory(${MYLIB_DIR})
 # Add OpenVDB as a submodule
 set(OPENVDB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/OpenVDB")
 
-# Use ExternalProject to fetch and build OpenVDB automatically if it's not found
-include(ExternalProject)
-
-# Define where to install OpenVDB
-set(OPENVDB_INSTALL_DIR "${CMAKE_BINARY_DIR}/openvdb_install")
-
-# If OpenVDB directory exists, we will use it, else we use ExternalProject to download and build it
 if(EXISTS "${OPENVDB_DIR}/CMakeLists.txt")
-  message(STATUS "Using OpenVDB submodule from: ${OPENVDB_DIR}")
+  message(STATUS "Configuring OpenVDB as a static library...")
+
+  # Ensure OpenVDB is built as a static library
+  set(OPENVDB_BUILD_STATIC ON CACHE BOOL "Build OpenVDB as a static library" FORCE)
+  set(OPENVDB_CORE_STATIC ON CACHE BOOL "Use OpenVDB static core" FORCE)
+  set(OPENVDB_USE_STATIC_LIBS ON CACHE BOOL "Force static linking of dependencies" FORCE)
+
+  # Disable optional components to minimize dependencies
+  set(OPENVDB_BUILD_BINARIES OFF CACHE BOOL "Don't build OpenVDB CLI tools" FORCE)
+  set(OPENVDB_BUILD_PYTHON_MODULE OFF CACHE BOOL "Disable OpenVDB Python bindings" FORCE)
+  set(OPENVDB_USE_BLOSC OFF CACHE BOOL "Disable Blosc compression" FORCE)
+
+  # Use Imath (OpenEXR) for half float support
+  set(OPENVDB_USE_IMATH_HALF ON CACHE BOOL "Use OpenEXR/Imath for half float support" FORCE)
+
+  # Ensure OpenVDB does not rely on shared libraries
+  set(OPENVDB_CORE_SHARED OFF CACHE BOOL "Disable OpenVDB shared core" FORCE)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries for OpenVDB" FORCE)
+
+  # Ensure dependencies are also static
+  set(Boost_USE_STATIC_LIBS ON CACHE BOOL "Use static Boost libraries" FORCE)
+  set(Boost_USE_STATIC_RUNTIME ON CACHE BOOL "Use static Boost runtime" FORCE)
+  set(TBB_STATIC ON CACHE BOOL "Use static TBB" FORCE)
+  set(ZLIB_BUILD_STATIC ON CACHE BOOL "Use static Zlib" FORCE)
+  set(Blosc_USE_STATIC_LIBS ON CACHE BOOL "Use static Blosc" FORCE)
+  set(ILMBASE_BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared IlmBase" FORCE)
+  set(OPENEXR_BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared OpenEXR" FORCE)
+
+  # Add OpenVDB subdirectory
   add_subdirectory(${OPENVDB_DIR})
 else()
-  # If OpenVDB submodule doesn't exist, use ExternalProject to fetch and build it
-  ExternalProject_Add(
-    OpenVDB
-    GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/openvdb.git
-    GIT_TAG master  # Or specify a specific version
-    PREFIX ${CMAKE_BINARY_DIR}/openvdb
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${OPENVDB_INSTALL_DIR}
-               -DBUILD_SHARED_LIBS=OFF   # Force static libraries
-               -DOPENVDB_BUILD_STATIC=ON
-               -DOPENVDB_USE_IMATH_HALF=ON
-               -DOPENVDB_USE_BLOSC=OFF    # Optional: Disable Blosc compression
-               -DOPENVDB_CORE_SHARED=OFF  # Disable OpenVDB shared core
-               -DBoost_USE_STATIC_LIBS=ON
-               -DTBB_STATIC=ON
-               -DZLIB_BUILD_STATIC=ON
-               -DBLOSC_USE_STATIC_LIBS=ON
-  )
-
-  # Ensure the target OpenVDB is built before MyApp
-  add_dependencies(MyApp OpenVDB)
-
-  # Link the downloaded OpenVDB as needed after ExternalProject builds it
-  ExternalProject_Get_Property(OpenVDB install_dir)
-  set(OPENVDB_INCLUDE_DIR "${install_dir}/include")
-  set(OPENVDB_LIBRARIES "${install_dir}/lib/libopenvdb_static.a")
+  message(FATAL_ERROR "OpenVDB submodule not found! Run `git submodule update --init --recursive`")
 endif()
 
-# Add executable and Link libraries
+# Add MyApp executable
 add_executable(MyApp src/main.cpp)
-target_include_directories(MyApp PRIVATE ${OPENVDB_INCLUDE_DIR})
+
+# Link MyLib and OpenVDB with MyApp
 target_link_libraries(MyApp PRIVATE MyLib openvdb_static)
 
 # Require C++17 for MyApp (adjust if needed)

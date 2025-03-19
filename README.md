@@ -1,6 +1,6 @@
 # MyApp
 
-MyApp is a sample C++ project that demonstrates how to integrate a custom library (MyLib) as a Git submodule. The project uses CMake for configuration and building, automatically checks for the latest Git commit of MyLib, and supports special build configurations. This README explains the project structure, build process, and how to extend the system.
+MyApp is a sample C++ project that demonstrates how to integrate a custom library (MyLib) as a Git submodule and third-party libraries like OpenVDB. The project uses CMake for configuration and building, automatically checks for the latest Git commit of MyLib, and supports special build configurations. This README explains the project structure, build process, how to extend the system, and how to integrate OpenVDB as a statically linked library for a fully portable executable.
 
 ## Table of Contents
 - [Project Overview](#project-overview)
@@ -14,10 +14,11 @@ MyApp is a sample C++ project that demonstrates how to integrate a custom librar
 
 ## Project Overview
 MyApp demonstrates:
-- Integrating MyLib as a Git submodule.
+- Integrating **MyLib** as a Git submodule.
 - Automatically checking and updating MyLib’s Git commit during configuration.
-- Building MyLib in different configurations (Debug, Release, or with a special compile flag).
-- A modular structure that facilitates future integration of third-party libraries.
+- Building **MyLib** in different configurations (Debug, Release, or with a special compile flag).
+- A modular structure that facilitates future integration of third-party libraries, including **OpenVDB**.
+- Statically linking **OpenVDB** into the executable for easy distribution with no external dependencies.
 
 ## File Structure
 ```
@@ -28,17 +29,19 @@ MyApp/
 ├── src/
 │   └── main.cpp           # Main source file for MyApp
 └── external/
-    └── MyLib/             # MyLib submodule (cloned via SSH)
-         ├── CMakeLists.txt  # CMake configuration for MyLib
-         ├── include/
-         │   └── MyLib.h     # Public header for MyLib
-         └── src/
-             └── MyLib.cpp   # Implementation of MyLib
+    ├── MyLib/             # MyLib submodule (cloned via SSH)
+    │   ├── CMakeLists.txt  # CMake configuration for MyLib
+    │   ├── include/
+    │   │   └── MyLib.h     # Public header for MyLib
+    │   └── src/
+    │       └── MyLib.cpp   # Implementation of MyLib
+    └── OpenVDB/            # OpenVDB submodule (or built externally)
+        └── ...             # OpenVDB source code and configuration
 ```
 
 ### Key Directories
 - **`src/`**: Contains MyApp’s source code.
-- **`external/`**: Contains external dependencies. Currently, MyLib is managed here as a submodule.
+- **`external/`**: Contains external dependencies. Currently, MyLib and OpenVDB are managed here as submodules.
 - **`build/`**: (Not tracked by Git) A directory to hold all build artifacts and generated files.
 
 ## Prerequisites
@@ -98,7 +101,7 @@ Ensure you have the following installed:
    ```
    This command compiles:
    - **MyLib** as a static library (with special flags if enabled).
-   - **MyApp** as the main executable linked against MyLib.
+   - **MyApp** as the main executable linked against MyLib and OpenVDB.
 
 ## Running the Application
 After a successful build, run the application:
@@ -119,6 +122,10 @@ The project supports several options at configuration time:
 - **`BUILD_MYLIB_SPECIAL`**  
   - **Purpose**: Builds MyLib with an additional compile definition (`SPECIAL_FLAG_ENABLED`) to enable special behavior.
   - **Usage**: `-DBUILD_MYLIB_SPECIAL=ON`
+
+- **`CMAKE_BUILD_TYPE`**  
+  - **Purpose**: Specifies the build type, e.g., Debug or Release.
+  - **Usage**: `-DCMAKE_BUILD_TYPE=Release`
 
 These flags can be combined or omitted as necessary.
 
@@ -213,7 +220,7 @@ In our **CMake setup**, we are letting CMake handle the **build directories** fo
 ### **Where is the Build Directory for Submodules Defined?**
 - We do not manually set a separate build directory for `MyLib`.
 - Instead, we include `MyLib` using `add_subdirectory(${MYLIB_DIR})` in `CMakeLists.txt` of **MyApp**.
-- This means that MyLib is c**ompiled inside the same CMake build directory as MyApp.**
+- This means that MyLib is **compiled inside the same CMake build directory** as MyApp.
 
 ### **How Does This Work?** 
 When we run:
@@ -264,3 +271,5 @@ The library is cloned and built separately in `build/third_party/MyThirdPartyLib
 - If using `add_subdirectory()`: The library is built under `build/external/MyLib/` automatically.
 - If we manually set a **custom build directory**: We can define it using `add_subdirectory(${MYLIB_DIR} ${MYLIB_BUILD_DIR})`.
 - If using `ExternalProject_Add()`: It allows fully custom build directories for third-party libraries.
+
+---
