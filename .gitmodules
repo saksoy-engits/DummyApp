@@ -1,0 +1,3 @@
+[submodule "Mylib/MyLib"]
+	path = Mylib/MyLib
+	url = https://github.com/saksoy-engits/MyLib.git
