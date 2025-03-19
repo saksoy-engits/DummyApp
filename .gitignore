@@ -1,0 +1,23 @@
+# Ignore the build directory entirely
+/build/
+
+# CMake generated files at the project root
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CTestTestfile.cmake
+
+# Build artifacts (object files, executables, libraries)
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.exe
+
+# IDE and Editor folders/files (optional)
+.vscode/
+.idea/
+*.user
+*.suo
