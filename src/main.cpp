@@ -1,5 +1,5 @@
 #include <iostream>
-#include "MyLib/MyLib.h"
+#include "MyLib.h"
 
 int main() {
     std::cout << "MyApp is running!" << std::endl;

@@ -42,7 +42,7 @@ if(EXISTS "${MYLIB_DIR}/.git")
       message(WARNING "Failed to fetch updates for MyLib")
     endif()
     execute_process(
-      COMMAND ${GIT_EXECUTABLE} -C ${MYLIB_DIR} merge origin/master
+      COMMAND ${GIT_EXECUTABLE} -C ${MYLIB_DIR} merge origin/main
       RESULT_VARIABLE MERGE_RESULT
     )
     if(NOT MERGE_RESULT EQUAL 0)

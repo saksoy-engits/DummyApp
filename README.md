@@ -11,8 +11,6 @@ MyApp is a sample C++ project that demonstrates how to integrate a custom librar
 - [Running the Application](#running-the-application)
 - [CMake Options and Special Flags](#cmake-options-and-special-flags)
 - [Adding New Libraries](#adding-new-libraries)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## Project Overview
 MyApp demonstrates:
@@ -137,3 +135,61 @@ In the future, you can add new libraries by following these guidelines:
    Place third-party libraries in `external/` or `third_party/` directories.
 4. **Integration**:  
    Update your top-level `CMakeLists.txt` to include the new libraries (using `add_subdirectory()` or similar) and link them with your targets using `target_link_libraries()`.
+
+## Choosing the Build Directory for Submodules and Libraries
+In our **CMake setup**, we are letting CMake handle the **build directories** for submodules (`MyLib`) and any additional libraries **automatically** inside our **CMake build directory** (e.g., `build/`).
+
+### **Where is the Build Directory for Submodules Defined?**
+- We do not manually set a separate build directory for `MyLib`.
+- Instead, we include `MyLib` using `add_subdirectory(${MYLIB_DIR})` in `CMakeLists.txt` of **MyApp**.
+- This means that MyLib is c**ompiled inside the same CMake build directory as MyApp.**
+
+### **How Does This Work?** 
+When we run:
+```
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+- CMake creates the `build/` directory.
+- MyApp and MyLib both get built inside `build/` automatically.
+
+The actual build directory for MyLib will be:
+```
+build/external/MyLib/
+```
+This structure is managed internally by CMake when `add_subdirectory(${MYLIB_DIR})` is used.
+
+## What If We Want a Custom Build Directory for Submodules?
+By default, CMake does not require setting a separate build directory for submodules. However, if you want **MyLib to have its own build directory separate from MyApp**, you can modify the `CMakeLists.txt` like this:
+```
+set(MYLIB_BUILD_DIR "${CMAKE_BINARY_DIR}/mylib_build")
+set(MYLIB_INSTALL_DIR "${CMAKE_BINARY_DIR}/mylib_install")
+
+add_subdirectory(${MYLIB_DIR} ${MYLIB_BUILD_DIR})
+```
+
+### What This Does:
+- Instead of MyLib compiling inside `build/external/MyLib/`, it will now be built inside `build/mylib_build/`.
+- You can later install MyLib separately into `build/mylib_install/` if needed.
+
+## What About Third-Party Libraries?
+If third-party libraries are later added (e.g., OpenSSL, Boost), we might use `ExternalProject_Add()`, which downloads and builds them in a separate directory.
+Example:
+```
+include(ExternalProject)
+
+ExternalProject_Add(MyThirdPartyLib
+    PREFIX "${CMAKE_BINARY_DIR}/third_party/MyThirdPartyLib"
+    GIT_REPOSITORY git@github.com:YourOrg/MyThirdPartyLib.git
+    GIT_TAG main
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/third_party/MyThirdPartyLib/install
+)
+```
+The library is cloned and built separately in `build/third_party/MyThirdPartyLib/`.
+
+## Where Do Submodules and Libraries Get Built?
+- **By default**: Inside the main **CMake build directory** (`build/`).
+- If using `add_subdirectory()`: The library is built under `build/external/MyLib/` automatically.
+- If we manually set a **custom build directory**: We can define it using `add_subdirectory(${MYLIB_DIR} ${MYLIB_BUILD_DIR})`.
+- If using `ExternalProject_Add()`: It allows fully custom build directories for third-party libraries.
