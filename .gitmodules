@@ -1,3 +1,6 @@
 [submodule "external/MyLib"]
 	path = external/MyLib
 	url = https://github.com/saksoy-engits/MyLib.git
+[submodule "external/OpenVDB"]
+	path = external/OpenVDB
+	url = https://github.com/AcademySoftwareFoundation/openvdb.git

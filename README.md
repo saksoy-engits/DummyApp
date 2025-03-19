@@ -136,6 +136,77 @@ In the future, you can add new libraries by following these guidelines:
 4. **Integration**:  
    Update your top-level `CMakeLists.txt` to include the new libraries (using `add_subdirectory()` or similar) and link them with your targets using `target_link_libraries()`.
 
+### Example, Adding OpenVDB as a Git Submodule
+Since OpenVDB is a large library with multiple dependencies, the best approach is **to add it as a submodule and build it within your project**.
+
+1. Add OpenVDB as a Submodule
+Run the following command in your project root:
+```bash
+git submodule add --depth=1 https://github.com/AcademySoftwareFoundation/openvdb.git external/OpenVDB
+git submodule update --init --recursive
+```
+
+2. Configuring CMake to Build OpenVDB as a Static Library
+Since we want **a single executable**, we should build **OpenVDB statically** instead of dynamically (.so / .dylib / .dll).
+- Modify CMakeLists.txt to Include OpenVDB
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(MyApp)
+
+# Enable C++17 or newer (OpenVDB requires C++17)
+set(CMAKE_CXX_STANDARD 17)
+
+# Add OpenVDB as a subdirectory (this will build it inside our project)
+add_subdirectory(external/OpenVDB)
+
+# Include OpenVDB headers
+include_directories(external/OpenVDB/openvdb)
+
+# Link OpenVDB statically to MyApp
+add_executable(MyApp src/main.cpp)
+target_link_libraries(MyApp PRIVATE openvdb_static)
+```
+-  Now, OpenVDB will be compiled as part of MyApp, and linked statically.
+- This ensures MyApp.exe has no external dependencies, making it platform-independent.
+
+3. Handling OpenVDB Dependencies
+- OpenVDB relies on: Blosc, Boost, TBB (Threading Building Blocks), Zlib, OpenEXR
+- To make sure they are included within your build, you can either:
+   * Enable OpenVDB's built-in dependency management (preferred).
+   * Manually add them as submodules.
+
+
+- Enable OpenVDB’s Dependency Management, Modify OpenVDB’s build settings before adding it:
+
+```cmake
+set(OPENVDB_BUILD_STATIC ON CACHE BOOL "Build OpenVDB as a static library")
+set(OPENVDB_USE_BLOSC OFF CACHE BOOL "Disable Blosc compression")
+set(OPENVDB_USE_IMATH_HALF ON CACHE BOOL "Use OpenEXR/Imath for half float support")
+set(OPENVDB_CORE_SHARED OFF CACHE BOOL "Disable OpenVDB shared core")
+```
+- This forces OpenVDB to bundle everything it needs inside MyApp.
+
+4. Creating a Single Executable for Clients
+- Now that MyApp is statically linked, it’s fully portable.
+- You can distribute:
+
+   * MyApp.exe (Windows)
+   * MyApp (Linux/macOS)
+   * No extra .dll / .so / .dylib files required!
+
+```
+MyApp/
+├── external/
+│   ├── OpenVDB/  (Git submodule)
+│   ├── other_libs/
+├── src/
+│   ├── main.cpp
+├── build/  (Generated build files)
+│   ├── MyApp (Final binary)
+├── CMakeLists.txt
+└── .gitmodules
+```
+
 ## Choosing the Build Directory for Submodules and Libraries
 In our **CMake setup**, we are letting CMake handle the **build directories** for submodules (`MyLib`) and any additional libraries **automatically** inside our **CMake build directory** (e.g., `build/`).
 
@@ -146,7 +217,7 @@ In our **CMake setup**, we are letting CMake handle the **build directories** fo
 
 ### **How Does This Work?** 
 When we run:
-```
+```bash
 mkdir build && cd build
 cmake ..
 cmake --build .
@@ -155,14 +226,14 @@ cmake --build .
 - MyApp and MyLib both get built inside `build/` automatically.
 
 The actual build directory for MyLib will be:
-```
+```bash
 build/external/MyLib/
 ```
 This structure is managed internally by CMake when `add_subdirectory(${MYLIB_DIR})` is used.
 
 ## What If We Want a Custom Build Directory for Submodules?
 By default, CMake does not require setting a separate build directory for submodules. However, if you want **MyLib to have its own build directory separate from MyApp**, you can modify the `CMakeLists.txt` like this:
-```
+```cmake
 set(MYLIB_BUILD_DIR "${CMAKE_BINARY_DIR}/mylib_build")
 set(MYLIB_INSTALL_DIR "${CMAKE_BINARY_DIR}/mylib_install")
 
@@ -175,8 +246,8 @@ add_subdirectory(${MYLIB_DIR} ${MYLIB_BUILD_DIR})
 
 ## What About Third-Party Libraries?
 If third-party libraries are later added (e.g., OpenSSL, Boost), we might use `ExternalProject_Add()`, which downloads and builds them in a separate directory.
-Example:
-```
+- Example:
+```cmake
 include(ExternalProject)
 
 ExternalProject_Add(MyThirdPartyLib
